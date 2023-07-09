@@ -136,6 +136,8 @@ DATABASES = {
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+EMAIL_HOST_USER = 'webmaster@localhost.com'
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -180,3 +182,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 #AUTH USER MODEL
 AUTH_USER_MODEL = 'authentication.User'
+
+
+# AUTHENTICATION VARIABLES
+FRONTEND_BASE_URL = 'http://localhost:8000'
+

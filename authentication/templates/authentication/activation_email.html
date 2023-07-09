@@ -1,0 +1,11 @@
+{% autoescape off%}
+Dear {{username}},
+
+Your registration was successful. Please click this link below to verify your account.
+
+{{frontend_base_url}}{% url 'authentication:activate-email' uidb64=uid token=token %}
+
+Please note that this link will expire after 24hrs.
+
+Thank you for using our service.
+{% endautoescape %}
