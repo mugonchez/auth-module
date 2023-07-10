@@ -100,11 +100,10 @@ class ActivationSerializer(serializers.Serializer):
             raise serializers.ValidationError("the link you clicked on is not valid")
         
         if user.is_active:
-            raise serializers.ValidationError("you have already verified your email account")
+            raise serializers.ValidationError("this email account has already been verified")
 
         if user.activation_link_expires_at is not None and timezone.now() > user.activation_link_expires_at:
             raise serializers.ValidationError("the link you clicked on has expired")
-        
         else:
             if is_token_valid(user, token):
                 user.is_active = True
@@ -113,4 +112,53 @@ class ActivationSerializer(serializers.Serializer):
         return validated_data
 
 
+class ResendActivationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def create(self, validated_data):
+        email = validated_data['email']
+
+        try:
+            user = User.objects.get(email=email)
+        except:
+            user = None
+        
+        if user is None:
+            raise serializers.ValidationError("user with that email does not exist")
+        
+        if user.is_active:
+            raise serializers.ValidationError("user with that email address is already verified") 
+        
+
+        """
+        user exists and account is inactive
+        send an activation link to the user
+        """
+        token = generate_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        username = user.username
+        email = user.email
+        frontend_base_url = settings.FRONTEND_BASE_URL
+        email_subject = "Verify Email To Activate Your Account"
+        email_body = render_to_string('authentication/activation_email.html',
+        {
+            'username':username,
+            'uid':uid,
+            'token': token,
+            'frontend_base_url': frontend_base_url
+        })
+        email_message = EmailMessage(
+                    email_subject,
+                    email_body,
+                    settings.EMAIL_HOST_USER,
+                    [email]
+                )
+        
+        email_message.send()
+
+        # update email expiry field of the user model
+        user.activation_link_expires_at = timezone.now() + timezone.timedelta(days=1)
+        user.save()
+
+        return validated_data
 
