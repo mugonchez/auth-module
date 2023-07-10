@@ -2,10 +2,11 @@ from rest_framework import serializers
 from .models import User
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from .utils import generate_token
+from .utils import generate_token, is_token_valid
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
+from django.utils import timezone
 
 # user serializer
 class UserSerializer(serializers.ModelSerializer):
@@ -64,7 +65,7 @@ class UserSerializer(serializers.ModelSerializer):
             'username':username,
             'uid':uid,
             'token': token,
-            'frontend_base_url': frontend_base_url 
+            'frontend_base_url': frontend_base_url
         })
 
         email_message = EmailMessage(
@@ -75,9 +76,41 @@ class UserSerializer(serializers.ModelSerializer):
                 )
         email_message.send()
 
+        # update email expiry field of the user model
+        user.activation_link_expires_at = timezone.now() + timezone.timedelta(days=1)
+        user.save()
+
         return user
 
     
+class ActivationSerializer(serializers.Serializer):
+    uid = serializers.CharField(required=True, max_length=10)
+    token = serializers.CharField(required=True, max_length=255)
+
+    def create(self, validated_data):
+        uid = validated_data['uid']
+        token = validated_data['token']
+
+        #get the current user from the uid encoded string
+        try:
+            uid = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=uid)
+        except:
+            user = None
+            raise serializers.ValidationError("the link you clicked on is not valid")
+        
+        if user.is_active:
+            raise serializers.ValidationError("you have already verified your email account")
+
+        if user.activation_link_expires_at is not None and timezone.now() > user.activation_link_expires_at:
+            raise serializers.ValidationError("the link you clicked on has expired")
+        
+        else:
+            if is_token_valid(user, token):
+                user.is_active = True
+                user.save()
+
+        return validated_data
 
 
 

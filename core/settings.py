@@ -187,3 +187,4 @@ AUTH_USER_MODEL = 'authentication.User'
 # AUTHENTICATION VARIABLES
 FRONTEND_BASE_URL = 'http://localhost:8000'
 
+
