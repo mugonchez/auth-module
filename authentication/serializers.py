@@ -8,6 +8,8 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 from django.utils import timezone
 from rest_framework import status
+from django.contrib.auth.hashers import check_password
+
 
 # user serializer
 class UserSerializer(serializers.ModelSerializer):
@@ -19,11 +21,13 @@ class UserSerializer(serializers.ModelSerializer):
             'last_name',
             'email',
             'phone_number',
-            'password' 
+            'password',
+            'profile_photo'
         )
 
         extra_kwargs = {
-            'password': {'write_only': True}
+            'password': {'write_only': True},
+            'profile_photo': {'required': False}
         }
     
     def validate_phone_number(self, value):
@@ -111,7 +115,7 @@ class ActivationSerializer(serializers.Serializer):
                 user.is_active = True
                 user.save()
             else:
-                raise CustomValidation("The link you clicked on is not valid", "link", status.HTTP_400_BAD_REQUEST)
+                raise CustomValidation("the link you clicked on is not valid", "link", status.HTTP_400_BAD_REQUEST)
 
         return validated_data
 
@@ -183,7 +187,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
             raise CustomValidation("user with that email does not exist", "email", status.HTTP_400_BAD_REQUEST)
         
         if not user.is_active:
-            raise CustomValidation("Your account email is not verified or your account may be blocked. Please verifiy your email or contact the system admin for your account to be unblocked.", "account", status.HTTP_400_BAD_REQUEST) 
+            raise CustomValidation("your account email is not verified or your account may be blocked. Please verifiy your email or contact the system admin for your account to be unblocked.", "account", status.HTTP_400_BAD_REQUEST) 
 
         """
         user is active, send the forgot password link
@@ -237,7 +241,7 @@ class ResetPasswordSerializer(serializers.Serializer):
             raise CustomValidation("the link you clicked on is not valid", "link", status.HTTP_400_BAD_REQUEST)
         
         if not user.is_active:
-            raise CustomValidation("Your email account is not verified or is blocked. Please verify your email or contact the system admin to unblock your account", "email", status.HTTP_400_BAD_REQUEST)
+            raise CustomValidation("your email account is not verified or is blocked. Please verify your email or contact the system admin to unblock your account", "email", status.HTTP_400_BAD_REQUEST)
 
         if user.reset_password_link_expires_at is not None and timezone.now() > user.reset_password_link_expires_at:
             raise CustomValidation("the link you clicked on has expired", "link", status.HTTP_400_BAD_REQUEST)
@@ -246,6 +250,41 @@ class ResetPasswordSerializer(serializers.Serializer):
                 user.set_password(password)
                 user.save()
             else:
-                raise CustomValidation("The link you clicked on is not valid", "link", status.HTTP_400_BAD_REQUEST)
+                raise CustomValidation("the link you clicked on is not valid", "link", status.HTTP_400_BAD_REQUEST)
 
         return validated_data
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(max_length=200, write_only=True)
+    new_password = serializers.CharField(max_length=200, write_only=True)
+
+    def create(self, validated_data):
+        entered_current_password = validated_data['current_password']
+        new_password = validated_data['new_password']
+
+        # get the current user from the request object
+        user = self.context['request'].user
+
+        # get current user password
+        user_password = user.password
+        
+        # check the current password entered is correct
+        is_correct_password = check_password(entered_current_password,user_password)
+
+
+        # 
+        if not is_correct_password:
+            raise CustomValidation("current password entered is not correct", "current_password", status.HTTP_400_BAD_REQUEST)
+        
+        if len(new_password) < 8:
+            raise CustomValidation("password should be atleast 8 characters long", "new_password", status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        return validated_data
+
+
+
+        

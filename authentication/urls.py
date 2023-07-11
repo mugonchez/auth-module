@@ -15,6 +15,8 @@ urlpatterns = [
     path('activate/', views.activate, name='activate'),
     path('resend-activation/', views.resend_activation, name='resend-activation'),
     path('forgot-password/', views.forgot_password, name='forgot-password'),
-    path('reset-password/', views.reset_password, name='reset-password')
+    path('reset-password/', views.reset_password, name='reset-password'),
+    path('change-password/', views.change_password, name='change-password'),
+    path('profile/', views.get_profile, name='profile')
 
 ]
