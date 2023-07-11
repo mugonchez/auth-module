@@ -14,4 +14,7 @@ urlpatterns = [
     path('refresh/', TokenRefreshView.as_view(), name='refresh'),
     path('activate/', views.activate, name='activate'),
     path('resend-activation/', views.resend_activation, name='resend-activation'),
+    path('forgot-password/', views.forgot_password, name='forgot-password'),
+    path('reset-password/', views.reset_password, name='reset-password')
+
 ]

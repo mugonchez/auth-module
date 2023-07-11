@@ -50,6 +50,7 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=20)
     profile_photo = models.FileField(upload_to=upload_to, null=True, blank=True)
     activation_link_expires_at = models.DateTimeField(blank=True, null=True)
+    reset_password_link_expires_at = models.DateTimeField(blank=True, null=True)
 
 
     objects = UserManager()
