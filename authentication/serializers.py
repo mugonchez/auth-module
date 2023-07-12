@@ -11,7 +11,7 @@ from rest_framework import status
 from django.contrib.auth.hashers import check_password
 
 
-# user serializer
+# user serializer create
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -29,6 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only': True},
             'profile_photo': {'required': False}
         }
+
     
     def validate_phone_number(self, value):
         user = User.objects.filter(phone_number=value)
@@ -87,6 +88,23 @@ class UserSerializer(serializers.ModelSerializer):
 
         return user
 
+# update user serializer update
+class UpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+            'phone_number',
+            'profile_photo'
+        )
+
+        extra_kwargs = {
+            'profile_photo': {'required': False},
+            'email': {'read_only':True}
+        }
 
 # serializer for user email account verification  
 class ActivationSerializer(serializers.Serializer):

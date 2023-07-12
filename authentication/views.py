@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -9,9 +9,11 @@ from .serializers import (
     ActivationSerializer,
     ForgotPasswordSerializer,
     ResetPasswordSerializer,
-    ChangePasswordSerializer
+    ChangePasswordSerializer,
+    UpdateUserSerializer
 )
 from .models import User
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 
 # Create your views here.
@@ -24,7 +26,7 @@ def register_user(request):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.validated_data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -94,7 +96,7 @@ def change_password(request):
     change password api view
     """
     if request.method == 'POST':
-        serializer = ChangePasswordSerializer(data=request.data, context = {'request': request, 'method': 'POST'})
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request, 'method': 'POST'})
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -103,19 +105,39 @@ def change_password(request):
 
 
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT', 'PATCH'])
+@parser_classes([FormParser, MultiPartParser, JSONParser])
 @permission_classes([IsAuthenticated])
-def get_profile(request):
+def profile(request):
     """
-    Get user profile information
+    Get user profile information and update user profile
     """
+    try:
+        user = User.objects.get(pk=request.user.pk)
+    except User.DoesNotExist:
+        return Response({"detail":"user does not exist"}, status=status.HTTP_404_NOT_FOUND)
+    
     if request.method == 'GET':
-        try:
-            user = User.objects.get(pk=request.user.pk)
-        except User.DoesNotExist:
-            return Response("user does not exist", status=status.HTTP_404_NOT_FOUND)
-        serializer = UserSerializer(user)
+        serializer = UpdateUserSerializer(user)
         return Response(serializer.data, status.HTTP_200_OK)
+    
+    elif request.method == 'PUT':
+        serializer = UpdateUserSerializer(user, data=request.data, context={'request': request, 'method': 'PUT'})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'PATCH':
+        serializer = UpdateUserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            if not data:
+                return Response({"detail":"please provide atleast one field to update"}, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
