@@ -31,12 +31,6 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     
-    def validate_phone_number(self, value):
-        user = User.objects.filter(phone_number=value)
-        if user.exists():
-            raise CustomValidation("a user with this phone number already exists", "phone_number", status.HTTP_400_BAD_REQUEST)
-        return value
-    
 
     # create user from validated data
     def create(self, validated_data):

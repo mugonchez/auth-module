@@ -47,7 +47,7 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=20,unique=True)
     profile_photo = models.FileField(upload_to=upload_to, null=True, blank=True)
     activation_link_expires_at = models.DateTimeField(blank=True, null=True)
     reset_password_link_expires_at = models.DateTimeField(blank=True, null=True)
