@@ -31,7 +31,7 @@ class CustomValidation(APIException):
 
 
 
-def send_registration_email(user):
+def send_activation_email(user):
     #send an activation link to the user
     token = generate_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -61,18 +61,17 @@ def send_registration_email(user):
     user.save()
 
 
-def resend_activation_email(user):
+def send_reset_email(user):
     """
-        user exists and account is inactive
-        send an activation link to the user
+    user is active, send the forgot password link
     """
     token = generate_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     username = user.username
     email = user.email
     frontend_base_url = settings.FRONTEND_BASE_URL
-    email_subject = "Verify Email To Activate Your Account"
-    email_body = render_to_string('authentication/activation_email.html',
+    email_subject = "Reset Your Password"
+    email_body = render_to_string('authentication/forgot_password_email.html',
     {
         'username':username,
         'uid':uid,
@@ -89,7 +88,7 @@ def resend_activation_email(user):
     email_message.send()
 
     # update email expiry field of the user model
-    user.activation_link_expires_at = timezone.now() + timezone.timedelta(days=1)
+    user.reset_password_link_expires_at = timezone.now() + timezone.timedelta(days=1)
     user.save()
 
 

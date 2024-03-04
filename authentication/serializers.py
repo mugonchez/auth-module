@@ -76,36 +76,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
         if not user.is_active:
             raise CustomValidation("your account email is not verified or your account may be blocked. Please verifiy your email or contact the system admin for your account to be unblocked.", "account", status.HTTP_400_BAD_REQUEST) 
 
-        """
-        user is active, send the forgot password link
-        """
-        token = generate_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        username = user.username
-        email = user.email
-        frontend_base_url = settings.FRONTEND_BASE_URL
-        email_subject = "Reset Your Password"
-        email_body = render_to_string('authentication/forgot_password_email.html',
-        {
-            'username':username,
-            'uid':uid,
-            'token': token,
-            'frontend_base_url': frontend_base_url
-        })
-        email_message = EmailMessage(
-                    email_subject,
-                    email_body,
-                    settings.EMAIL_HOST_USER,
-                    [email]
-                )
-        
-        email_message.send()
-
-        # update email expiry field of the user model
-        user.reset_password_link_expires_at = timezone.now() + timezone.timedelta(days=1)
-        user.save()
-
-        return validated_data
+  
         
 
 

@@ -15,7 +15,7 @@ from .serializers import (
 from .models import User
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import User
-from .utils import is_token_valid, resend_activation_email, send_registration_email
+from .utils import is_token_valid, send_activation_email, send_reset_email
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.utils import timezone
@@ -31,7 +31,7 @@ def register_user(request):
         if serializer.is_valid():
             user = serializer.save()
             # send email to user upon successful registration
-            send_registration_email(user)
+            send_activation_email(user)
             return Response({'message': 'User registered successfully. Verification email sent.'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     return Response({"error": "Only POST requests are allowed"},status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -94,7 +94,7 @@ def resend_activation(request):
             if user.is_active:
                 return Response({"error": "User with that email is already verified"}, status=status.HTTP_403_FORBIDDEN)
             
-            resend_activation_email(user)
+            send_activation_email(user)
             return Response(status=status.HTTP_204_NO_CONTENT)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -110,7 +110,15 @@ def forgot_password(request):
     if request.method == 'POST':
         serializer = ForgotPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            email = serializer.validated_data.get('email')
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response({"error": "User with that email does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            
+            if not user.is_active:
+                return Response({"error": "Kindly verify your email address before proceeding"}, status=status.HTTP_403_FORBIDDEN)
+            send_reset_email(user)
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
