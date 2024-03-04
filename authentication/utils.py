@@ -32,7 +32,6 @@ class CustomValidation(APIException):
 
 
 def send_registration_email(user):
-    
     #send an activation link to the user
     token = generate_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -59,6 +58,10 @@ def send_registration_email(user):
     # update email expiry field of the user model
     user.activation_link_expires_at = timezone.now() + timezone.timedelta(days=1)
     user.save()
+
+def send_activation_email(user):
+    pass
+
 
 
 

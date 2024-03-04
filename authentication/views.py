@@ -15,7 +15,10 @@ from .serializers import (
 from .models import User
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import User
-from .utils import send_registration_email
+from .utils import is_token_valid, send_registration_email
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.utils import timezone
 
 # Create your views here.
 @api_view(['POST'])
@@ -34,7 +37,6 @@ def register_user(request):
     return Response({"error": "Only POST requests are allowed"},status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-
 @api_view(['POST'])
 def activate(request):
     """
@@ -43,10 +45,36 @@ def activate(request):
     if request.method == 'POST':
         serializer = ActivationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            uid = serializer.validated_data.get('uid')
+            token = serializer.validated_data.get('token')
+
+            # Decode UID and retrieve user
+            try:
+                uid = force_str(urlsafe_base64_decode(uid))
+                user = User.objects.get(pk=uid)
+            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+                user = None
+
+            # Handle user not found
+            if user is None:
+                return Response({"error": "Invalid activation link"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if user is already active
+            if user.is_active:
+                return Response({"error": "User account already active"}, status=status.HTTP_403_FORBIDDEN) 
+
+            # Check activation link expiration
+            if user.activation_link_expires_at is not None and timezone.now() > user.activation_link_expires_at:
+                return Response({"error": "Activation link has expired"}, status=status.HTTP_403_FORBIDDEN)
+        
+            # Check token validity and activate user
+            if is_token_valid(user, token):
+                user.is_active = True
+                user.save()
+                return Response({"message": "User Activated Successfully"}, status=status.HTTP_204_NO_CONTENT)
+        
+        return Response({"error": "Invalid activation link"}, status=status.HTTP_400_BAD_REQUEST)
+    
 
 
 @api_view(['POST'])

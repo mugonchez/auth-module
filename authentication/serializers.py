@@ -53,31 +53,31 @@ class ActivationSerializer(serializers.Serializer):
     uid = serializers.CharField(required=True, max_length=10)
     token = serializers.CharField(required=True, max_length=255)
 
-    def create(self, validated_data):
-        uid = validated_data['uid']
-        token = validated_data['token']
+    # def create(self, validated_data):
+    #     uid = validated_data['uid']
+    #     token = validated_data['token']
 
-        #get the current user from the uid encoded string
-        try:
-            uid = force_str(urlsafe_base64_decode(uid))
-            user = User.objects.get(pk=uid)
-        except:
-            user = None
-            raise CustomValidation("the link you clicked on is not valid", "link", status.HTTP_400_BAD_REQUEST)
+    #     #get the current user from the uid encoded string
+    #     try:
+    #         uid = force_str(urlsafe_base64_decode(uid))
+    #         user = User.objects.get(pk=uid)
+    #     except:
+    #         user = None
+    #         raise CustomValidation("the link you clicked on is not valid", "link", status.HTTP_400_BAD_REQUEST)
         
-        if user.is_active:
-            raise CustomValidation("this email account has already been verified", "email", status.HTTP_400_BAD_REQUEST)
+    #     if user.is_active:
+    #         raise CustomValidation("this email account has already been verified", "email", status.HTTP_400_BAD_REQUEST)
 
-        if user.activation_link_expires_at is not None and timezone.now() > user.activation_link_expires_at:
-            raise CustomValidation("the link you clicked on has expired", "link", status.HTTP_400_BAD_REQUEST)
-        else:
-            if is_token_valid(user, token):
-                user.is_active = True
-                user.save()
-            else:
-                raise CustomValidation("the link you clicked on is not valid", "link", status.HTTP_400_BAD_REQUEST)
+    #     if user.activation_link_expires_at is not None and timezone.now() > user.activation_link_expires_at:
+    #         raise CustomValidation("the link you clicked on has expired", "link", status.HTTP_400_BAD_REQUEST)
+    #     else:
+    #         if is_token_valid(user, token):
+    #             user.is_active = True
+    #             user.save()
+    #         else:
+    #             raise CustomValidation("the link you clicked on is not valid", "link", status.HTTP_400_BAD_REQUEST)
 
-        return validated_data
+    #     return validated_data
 
 # serializer for resend email activation/verification link
 class ResendActivationSerializer(serializers.Serializer):
