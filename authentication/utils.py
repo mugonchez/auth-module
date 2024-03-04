@@ -57,10 +57,40 @@ def send_registration_email(user):
 
     # update email expiry field of the user model
     user.activation_link_expires_at = timezone.now() + timezone.timedelta(days=1)
+    user.is_active = False
     user.save()
 
-def send_activation_email(user):
-    pass
+
+def resend_activation_email(user):
+    """
+        user exists and account is inactive
+        send an activation link to the user
+    """
+    token = generate_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    username = user.username
+    email = user.email
+    frontend_base_url = settings.FRONTEND_BASE_URL
+    email_subject = "Verify Email To Activate Your Account"
+    email_body = render_to_string('authentication/activation_email.html',
+    {
+        'username':username,
+        'uid':uid,
+        'token': token,
+        'frontend_base_url': frontend_base_url
+    })
+    email_message = EmailMessage(
+                email_subject,
+                email_body,
+                settings.EMAIL_HOST_USER,
+                [email]
+            )
+    
+    email_message.send()
+
+    # update email expiry field of the user model
+    user.activation_link_expires_at = timezone.now() + timezone.timedelta(days=1)
+    user.save()
 
 
 

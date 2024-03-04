@@ -15,7 +15,7 @@ from .serializers import (
 from .models import User
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import User
-from .utils import is_token_valid, send_registration_email
+from .utils import is_token_valid, resend_activation_email, send_registration_email
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.utils import timezone
@@ -80,14 +80,25 @@ def activate(request):
 @api_view(['POST'])
 def resend_activation(request):
     """
-    resend activation api view
+    Resend activation API view
     """
     if request.method == 'POST':
         serializer = ResendActivationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            email = serializer.validated_data.get('email')
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response({"error": "User with that email does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            
+            if user.is_active:
+                return Response({"error": "User with that email is already verified"}, status=status.HTTP_403_FORBIDDEN)
+            
+            resend_activation_email(user)
             return Response(status=status.HTTP_204_NO_CONTENT)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
