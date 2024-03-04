@@ -10,7 +10,6 @@ from django.utils import timezone
 from rest_framework import status
 from django.contrib.auth.hashers import check_password
 
-
 # user serializer create
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,57 +29,6 @@ class UserSerializer(serializers.ModelSerializer):
             'profile_photo': {'required': False}
         }
 
-    
-
-    # create user from validated data
-    def create(self, validated_data):
-        username = validated_data['username']
-        first_name = validated_data['first_name']
-        last_name = validated_data['last_name']
-        email = validated_data['email']
-        password = validated_data['password']
-        phone_number = validated_data['phone_number']
-
-
-        user = User.objects.create_user(username=username, 
-                                        first_name=first_name, 
-                                        last_name=last_name, 
-                                        email=email, 
-                                        password=password, 
-                                        phone_number=phone_number)
-        # deactivate user 
-        user.is_active = False
-        user.save()
-
-
-        # send an activation link to the user
-        token = generate_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        username = user.username
-        email = user.email
-        frontend_base_url = settings.FRONTEND_BASE_URL
-        email_subject = "Verify Email To Activate Your Account"
-        email_body = render_to_string('authentication/activation_email.html',
-        {
-            'username':username,
-            'uid':uid,
-            'token': token,
-            'frontend_base_url': frontend_base_url
-        })
-
-        email_message = EmailMessage(
-                    email_subject,
-                    email_body,
-                    settings.EMAIL_HOST_USER,
-                    [email]
-                )
-        email_message.send()
-
-        # update email expiry field of the user model
-        user.activation_link_expires_at = timezone.now() + timezone.timedelta(days=1)
-        user.save()
-
-        return user
 
 # update user serializer update
 class UpdateUserSerializer(serializers.ModelSerializer):
