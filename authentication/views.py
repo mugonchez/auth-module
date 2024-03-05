@@ -71,7 +71,7 @@ def activate(request):
             if is_token_valid(user, token):
                 user.is_active = True
                 user.save()
-                return Response({"message": "User Activated Successfully"}, status=status.HTTP_204_NO_CONTENT)
+                return Response({"message": "User activated successfully"}, status=status.HTTP_204_NO_CONTENT)
         
         return Response({"error": "Invalid activation link"}, status=status.HTTP_400_BAD_REQUEST)
     
@@ -132,9 +132,36 @@ def reset_password(request):
     if request.method == 'POST':
         serializer = ResetPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            uid = serializer.validated_data.get('uid')
+            token = serializer.validated_data.get('token')
+            password = serializer.validated_data.get('password')
+
+            # Decode UID and retrieve user
+            try:
+                uid = force_str(urlsafe_base64_decode(uid))
+                user = User.objects.get(pk=uid)
+            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+                user = None
+
+            # Handle user not found
+            if user is None:
+                return Response({"error": "Invalid reset link"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if user is already active
+            if not user.is_active:
+                return Response({"error": "User account not active or account email not verified"}, status=status.HTTP_403_FORBIDDEN) 
+
+            # Check activation link expiration
+            if user.reset_password_link_expires_at is not None and timezone.now() > user.reset_password_link_expires_at:
+                return Response({"error": "Reset password link has expired"}, status=status.HTTP_403_FORBIDDEN)
+        
+            # Check token validity and activate user
+            if is_token_valid(user, token):
+                user.set_password(password)
+                user.save()
+                return Response({"message": "Password reset successfully"}, status=status.HTTP_204_NO_CONTENT)
+        
+        return Response({"error": "Invalid reset link"}, status=status.HTTP_400_BAD_REQUEST)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
@@ -146,7 +173,7 @@ def change_password(request):
     change password api view
     """
     if request.method == 'POST':
-        serializer = ChangePasswordSerializer(data=request.data, context={'request': request, 'method': 'POST'})
+        serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -165,7 +192,7 @@ def profile(request):
     try:
         user = User.objects.get(pk=request.user.pk)
     except User.DoesNotExist:
-        return Response({"detail":"user does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error":"user does not exist"}, status=status.HTTP_404_NOT_FOUND)
     
     if request.method == 'GET':
         serializer = UpdateUserSerializer(user)
@@ -183,7 +210,7 @@ def profile(request):
         if serializer.is_valid():
             data = serializer.validated_data
             if not data:
-                return Response({"detail":"please provide atleast one field to update"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error":"please provide atleast one field to update"}, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
