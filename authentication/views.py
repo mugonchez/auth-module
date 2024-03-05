@@ -1,8 +1,13 @@
-from django.shortcuts import render
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+from django.utils import timezone
+from django.contrib.auth.hashers import check_password
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+
+
 from .serializers import (
     UserSerializer, 
     ResendActivationSerializer,
@@ -16,9 +21,8 @@ from .models import User
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import User
 from .utils import is_token_valid, send_activation_email, send_reset_email
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from django.utils import timezone
+
+
 
 # Create your views here.
 @api_view(['POST'])
@@ -161,7 +165,7 @@ def reset_password(request):
                 user.save()
                 return Response({"message": "Password reset successfully"}, status=status.HTTP_204_NO_CONTENT)
         
-        return Response({"error": "Invalid reset link"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
@@ -175,8 +179,23 @@ def change_password(request):
     if request.method == 'POST':
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            current_password = serializer.validated_data.get('current_password')
+            new_password = serializer.validated_data.get('new_password')
+
+            user = request.user
+
+            # password from database
+            user_password = user.password
+
+            is_correct_password = check_password(current_password, user_password)
+
+            if not is_correct_password:
+                return Response({"error": "Current password is not correct"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user.set_password(new_password)
+            user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 

@@ -12,6 +12,7 @@ class UserManager(BaseUserManager):
     create normal user
     '''
     def create_user(self, username, first_name, last_name, email, phone_number, password, **other_fields):
+         
          email = self.normalize_email(email)
          user = self.model(email=email, 
                           username=username,

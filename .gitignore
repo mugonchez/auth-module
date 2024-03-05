@@ -54,6 +54,7 @@ atlassian-ide-plugin.xml
 develop-eggs/ 
 dist/ 
 downloads/ 
+images/
 eggs/ 
 .eggs/ 
 lib/ 

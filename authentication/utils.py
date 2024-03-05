@@ -5,7 +5,7 @@ from rest_framework import status
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 from django.utils import timezone
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes, force_str
 from django.conf import settings
 
@@ -28,7 +28,6 @@ class CustomValidation(APIException):
         if detail is not None:
             self.detail = {field: force_str(detail)}
         else: self.detail = {'detail': force_str(self.default_detail)}
-
 
 
 def send_activation_email(user):
