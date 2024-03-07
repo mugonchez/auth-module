@@ -20,7 +20,7 @@ from .serializers import (
 from .models import User
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import User
-from .utils import is_token_valid, send_activation_email, send_reset_email
+from .utils import is_strong_password, is_token_valid, send_activation_email, send_reset_email
 
 
 
@@ -161,6 +161,11 @@ def reset_password(request):
         
             # Check token validity and activate user
             if is_token_valid(user, token):
+                is_pass_strong = is_strong_password(password)
+
+                if not is_pass_strong:
+                    return Response({"error": "Password must be 8+ characters with uppercase, lowercase, digits, and special characters."}, status=status.HTTP_400_BAD_REQUEST)
+                
                 user.set_password(password)
                 user.save()
                 return Response({"message": "Password reset successfully"}, status=status.HTTP_204_NO_CONTENT)
@@ -192,6 +197,11 @@ def change_password(request):
             if not is_correct_password:
                 return Response({"error": "Current password is not correct"}, status=status.HTTP_400_BAD_REQUEST)
             
+            is_pass_strong = is_strong_password(new_password)
+
+            if not is_pass_strong:
+                return Response({"error": "Password must be 8+ characters with uppercase, lowercase, digits, and special characters."}, status=status.HTTP_400_BAD_REQUEST)
+                
             user.set_password(new_password)
             user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -211,14 +221,14 @@ def profile(request):
     try:
         user = User.objects.get(pk=request.user.pk)
     except User.DoesNotExist:
-        return Response({"error":"user does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error":"User does not exist"}, status=status.HTTP_404_NOT_FOUND)
     
     if request.method == 'GET':
         serializer = UpdateUserSerializer(user)
         return Response(serializer.data, status.HTTP_200_OK)
     
     elif request.method == 'PUT':
-        serializer = UpdateUserSerializer(user, data=request.data, context={'request': request, 'method': 'PUT'})
+        serializer = UpdateUserSerializer(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -229,7 +239,7 @@ def profile(request):
         if serializer.is_valid():
             data = serializer.validated_data
             if not data:
-                return Response({"error":"please provide atleast one field to update"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error":"Please provide atleast one field to update"}, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

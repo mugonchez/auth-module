@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework.exceptions import APIException
 from django.utils.encoding import force_str
@@ -8,6 +9,7 @@ from django.utils import timezone
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes, force_str
 from django.conf import settings
+
 
 # Generate a token for a user
 def generate_token(user):
@@ -92,5 +94,28 @@ def send_reset_email(user):
 
 
 
+def is_strong_password(password):
+    # Check if the password has at least 8 characters
+    if len(password) < 8:
+        return False
+
+    # Check if the password contains at least one uppercase letter
+    if not any(char.isupper() for char in password):
+        return False
+
+    # Check if the password contains at least one lowercase letter
+    if not any(char.islower() for char in password):
+        return False
+
+    # Check if the password contains at least one digit
+    if not any(char.isdigit() for char in password):
+        return False
+
+    # Check if the password contains at least one special character
+    if not re.search(r'[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]', password):
+        return False
+
+    # If all criteria are met, the password is strong
+    return True
 
 
