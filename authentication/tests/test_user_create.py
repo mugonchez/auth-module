@@ -9,7 +9,9 @@ from django.core import mail
 
 class TestUserRegistration(TestCase):
     def setUp(self):
+        # api client
         self.client = APIClient()
+        # urls
         self.register_url = reverse('authentication:register')
 
     def test_valid_user_registration(self):
