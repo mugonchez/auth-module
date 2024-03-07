@@ -33,6 +33,14 @@ def register_user(request):
     if request.method == 'POST':
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
+            password = serializer.validated_data.get('password')
+            
+            is_pass_strong = is_strong_password(password)
+
+            if not is_pass_strong:
+                return Response({"error": "Password must be 8+ characters with uppercase, lowercase, digits, and special characters."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            
             user = serializer.save()
             # send email to user upon successful registration
             send_activation_email(user)
