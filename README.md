@@ -9,7 +9,6 @@ Security is paramount. My system employs JWT (JSON Web Token) authentication, of
 
 
 ## API Endpoints
-
 POST /auth/register/ : create a new user account.
 
 POST /auth/login/ : log in to an existing user account and receive an access token.
