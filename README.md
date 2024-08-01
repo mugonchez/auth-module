@@ -1,4 +1,4 @@
-# Django RESTFful Authentication Endpoints
+# Django RESTful Authentication Endpoints
 Customizable RESTful API endpoints to facilitate user registration, login, access token refreshing, password reset, and password change functionalities. 
 
 ## Application Framework and Database
