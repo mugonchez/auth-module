@@ -50,7 +50,29 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         return response
 
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get('refresh_token')
 
+        if refresh_token is None:
+            return Response({'error': 'Refresh token not provided'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        request.data['refresh'] = refresh_token
+        response = super().post(request, *args, **kwargs)
+
+        if 'refresh' in response.data:
+            response.set_cookie(
+                key='refresh_token',
+                value=response.data['refresh'],
+                httponly=True,
+                secure=True,
+                samesite='Strict',
+                max_age=timedelta(hours=24),
+                expires=timedelta(hours=24)
+            )
+            del response.data['refresh']
+
+        return response
 
 
 
