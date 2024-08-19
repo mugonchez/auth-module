@@ -8,7 +8,6 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from datetime import timedelta
 
@@ -27,8 +26,7 @@ from .models import User
 from .utils import is_strong_password, is_token_valid, send_activation_email, send_reset_email
 
 
-
-
+# Create your views here.
 class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -87,7 +85,6 @@ class LogoutView(APIView):
         return response
 
 
-# Create your views here.
 @api_view(['POST'])
 def register_user(request):
     """
