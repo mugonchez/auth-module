@@ -75,6 +75,17 @@ class CustomTokenRefreshView(TokenRefreshView):
         return response
 
 
+class LogoutView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Set the cookie expiration to a past date to clear it
+        response = Response(
+            {'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
+        response.delete_cookie(
+            key='refresh_token',
+            samesite='Strict'
+        )
+        return response
+
 
 # Create your views here.
 @api_view(['POST'])
