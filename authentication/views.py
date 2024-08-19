@@ -7,6 +7,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.views import APIView
+from datetime import timedelta
 
 from .serializers import (
     UserSerializer, 
@@ -21,6 +25,32 @@ from .models import User
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import User
 from .utils import is_strong_password, is_token_valid, send_activation_email, send_reset_email
+
+
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        refresh_token = response.data['refresh']
+
+        response.set_cookie(
+            key='refresh_token',
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite='Strict',
+            max_age=timedelta(hours=24),
+            expires=timedelta(hours=24)
+
+        )
+
+        # Optionally, you can remove the refresh token from the response body
+        del response.data['refresh']
+
+        return response
+
+
 
 
 
